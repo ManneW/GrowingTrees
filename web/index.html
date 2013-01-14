@@ -1,0 +1,166 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Growing L-system based trees</title>
+        <style>
+            body {
+                font-family: arial;
+                font-size: 13px;
+                margin: 0px;
+                padding: 0px;
+            }
+
+            label {
+                font-weight: bold;
+            }
+        </style>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+        <script src="ltree.js" type="text/javascript"></script>
+
+    </head>
+    <body>
+        <div style="float:left;background-image: url('img/frame.png'); background-size: 900px 700px;background-repeat: no-repeat;background-position: -40px -30px">
+            <canvas id="myCanvas" width="665" height="460"
+                    style="background-color: #64bfff;border: 1px solid transparent;margin: 86px 100px 100px 76px"></canvas>
+        </div>
+        <div style="float:left;width:250px">
+            <h2><a href="webstaff.itn.liu.se/~stegu/TNM084-2012/" target="_blank">TNM084</a>-project</h2><h4>by Emanuel Winblad</h4>
+            <button type="button" id="addButton">Grow</button><button type="button" id="resetButton">Reset</button><br />
+
+            <label for="iterationsField">Iterations:</label><input type="number" id="iterationsField" value="5" /><br />
+            <em>(Note: Iteration count does not include branch length growth)</em><br/>
+            <label for="ruleField">Rule:</label><input type="text" id="ruleField"/><br />
+            <label for="applyNoise">Apply noise to angles:</label><input type="checkbox" id="applyNoise" />
+
+            <div style="margin:10px;padding:5px;background-color: #d3d3d3">
+                <em>Rule Legend</em>
+                <ul>
+                    <li>F: Draw branch</li>
+                    <li>X: Draw leaf</li>
+                    <li>[: Start branching</li>
+                    <li>]: End branching</li>
+                    <li>+: Turn clockwise</li>
+                    <li>-: Turn counter clockwise</li>
+                </ul>
+            </div>
+
+            <em>Frame graphics: </em><a href="http://www.fuzzimo.com/free-hi-res-old-picture-frame-images-part-1/" target="_blank">Fuzzimo.com</a>
+        </div>
+        <script>
+            $(document).ready(function () {
+                var myTree = new Tree();
+                var canvas = document.getElementById('myCanvas');
+                var context = canvas.getContext('2d');
+                var w = canvas.width;
+                var h = canvas.height;
+
+                var defaultRule = 'F[+X][-X]';
+                myTree.setRule(defaultRule);
+
+                var currentIterations = 0;
+                var iterationsLimit = 13;
+                var maxIterations = 5;
+                var branchLength = 5;
+                var angle = 25;
+
+                function drawTree(tree) {
+                    canvas.getContext('2d').clearRect(0, 0, w, h);
+                    tree.setAngle(angle);
+                    tree.draw(canvas, 0, 0, branchLength, currentIterations);
+                }
+
+                var clickCount = 0;
+                var growthTimer = null;
+                document.getElementById('addButton').onclick = function() {
+                    if (growthTimer == null) {
+                        growthTimer = setInterval(function() {
+                            if (currentIterations > maxIterations) {
+                                return;
+                            }
+
+                            // Every fourth "click", make a new iteration,
+                            // otherwise, only increase branch length.
+                            if (clickCount % 4 == 0) {
+                                currentIterations++;
+                            } else {
+                                branchLength += 3;
+                            }
+
+                            clickCount++;
+
+                            drawTree(myTree);
+                        }, 100);
+
+                        $('#addButton').attr('disabled', 'disabled');
+                        $('#resetButton').removeAttr('disabled');
+                    }
+                };
+
+                /**
+                 * Clear the canvas and reset the tree drawing.
+                 *
+                 * Altered rules and settings for iterations remains the same, though.
+                 *
+                 * @param canvas The canvas to clear
+                 * @param tree The tree to reset
+                 */
+                function clearCanvasAndResetTree(canvas, tree) {
+                    if (growthTimer != null) {
+                        clearInterval(growthTimer);
+                    }
+
+                    growthTimer = null;
+                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                    currentIterations = 0;
+                    clickCount = 0;
+                    branchLength = 5;
+
+
+                    $('#addButton').removeAttr('disabled');
+                    $('#resetButton').attr('disabled', 'disabled');
+                }
+
+
+                /**
+                 * Apply change listener to the field for the rule
+                 */
+                $('#ruleField')
+                        .val(defaultRule)
+                        .change(function (eventObject) {
+                            console.log(this.value);
+                            myTree.setRule(this.value);
+                        });
+
+                /**
+                 * Apply change listener to the field for the iterations count
+                 */
+                $('#iterationsField')
+                        .change(function (eventObject) {
+                            maxIterations = this.value;
+                        });
+
+                /**
+                 * Apply change listener to the noise checkbox
+                 */
+                $('#applyNoise')
+                        .change(function (eventObject) {
+                            if (this.checked) {
+                                //Use noise
+                                myTree.setNoise(true);
+                            } else {
+                                //No noise
+                                myTree.setNoise(null);
+                            }
+                        });
+
+                /**
+                 * Add click listener to the reset button
+                 */
+                $('#resetButton')
+                        .click(function () {
+                            clearCanvasAndResetTree(canvas, myTree);
+                        });
+            });
+        </script>
+    </body>
+</html>
